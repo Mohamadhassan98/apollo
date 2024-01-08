@@ -1,7 +1,7 @@
 import { hash } from 'ohash'
 import { print } from 'graphql'
 import type { OperationVariables, QueryOptions, DefaultContext } from '@apollo/client'
-import type { AsyncData } from 'nuxt/dist/app/composables'
+import type { AsyncData } from 'nuxt/app'
 import type { NuxtAppApollo } from '../types'
 import { ref, useCookie, useNuxtApp, useAsyncData } from '#imports'
 import NuxtApollo from '#build/apollo'

@@ -1,5 +1,11 @@
 import type { ClientOptions } from 'graphql-ws'
-import type { ApolloClient, HttpOptions, DefaultOptions, InMemoryCacheConfig } from '@apollo/client'
+import type {
+  ApolloClient,
+  HttpOptions,
+  DefaultOptions,
+  InMemoryCacheConfig,
+  ApolloClientOptions
+} from '@apollo/client'
 import type { CookieOptions } from 'nuxt/dist/app/composables'
 import type { RestartableClient } from './runtime/ws'
 export type { ErrorResponse } from '@apollo/client/link/error'
@@ -11,7 +17,7 @@ export type NuxtAppApollo = Partial<{
   _apolloWsClients?: Record<string, RestartableClient>;
 }>;
 
-export type ClientConfig = {
+export type ClientConfig<T = any> = Partial<ApolloClientOptions<T>> & {
   /**
    * The GraphQL endpoint.
    * @type {string}

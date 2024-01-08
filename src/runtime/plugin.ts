@@ -19,16 +19,16 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   for (const [key, clientConfig] of Object.entries(NuxtApollo.clients)) {
     const getAuth = async () => {
-      const token = ref<string | null>()
+      const token = ref<string | null>(null)
 
       await nuxtApp.callHook('apollo:auth', { token, client: key })
 
       if (!token.value) {
         if (clientConfig.tokenStorage === 'cookie') {
           if (process.client) {
-            token.value = useCookie(clientConfig.tokenName!).value
+            token.value = useCookie(clientConfig.tokenName!).value ?? null
           } else if (requestCookies?.cookie) {
-            token.value = requestCookies.cookie.split(';').find(c => c.trim().startsWith(`${clientConfig.tokenName}=`))?.split('=')?.[1]
+            token.value = requestCookies.cookie.split(';').find(c => c.trim().startsWith(`${clientConfig.tokenName}=`))?.split('=')?.[1] ?? null
           }
         } else if (process.client && clientConfig.tokenStorage === 'localStorage') {
           token.value = localStorage.getItem(clientConfig.tokenName!)
@@ -81,15 +81,15 @@ export default defineNuxtPlugin((nuxtApp) => {
 
       wsLink = new GraphQLWsLink(wsClient)
 
-      nuxtApp._apolloWsClients = nuxtApp._apolloWsClients || {}
-      nuxtApp._apolloWsClients[key] = wsClient
+      nuxtApp._apolloWsClients = nuxtApp._apolloWsClients || {};
+      (nuxtApp._apolloWsClients as any)[key] = wsClient
     }
 
     const errorLink = onError((err) => {
       nuxtApp.callHook('apollo:error', err)
     })
 
-    const link = ApolloLink.from([
+    const link = clientConfig.link || ApolloLink.from([
       errorLink,
       ...(!wsLink
         ? [httpLink]
@@ -107,9 +107,10 @@ export default defineNuxtPlugin((nuxtApp) => {
           ])
     ])
 
-    const cache = new InMemoryCache(clientConfig.inMemoryCacheOptions)
+    const cache = clientConfig.cache || new InMemoryCache(clientConfig.inMemoryCacheOptions)
 
     clients[key] = new ApolloClient({
+      ...clientConfig,
       link,
       cache,
       ...(NuxtApollo.clientAwareness && { name: key }),
@@ -137,7 +138,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   provideApolloClients(clients)
   nuxtApp.vueApp.provide(ApolloClients, clients)
-  nuxtApp.vueApp.use(createApolloProvider({ defaultClient: clients?.default as any }))
+  nuxtApp.vueApp.use(createApolloProvider({ defaultClient: clients?.default as any }) as any)
   nuxtApp._apolloClients = clients
 
   const defaultClient = clients?.default

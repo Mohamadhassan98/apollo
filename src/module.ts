@@ -41,7 +41,7 @@ export default defineNuxtModule<NuxtApolloConfig<any>>({
   },
   async setup (options, nuxt) {
     if (!options.clients || !Object.keys(options.clients).length) {
-      throw new Error('[@nuxtjs/apollo] Atleast one client must be configured.')
+      throw new Error('[@nuxtjs/apollo] At least one client must be configured.')
     }
 
     const { resolve } = createResolver(import.meta.url)
@@ -196,12 +196,12 @@ export interface RuntimeModuleHooks {
   'apollo:error': (error: ErrorResponse) => void
 }
 
-export interface ModuleRuntimeConfig {
-  apollo: NuxtApolloConfig<any>
+export interface ModuleRuntimeConfig<T = any> {
+  apollo: NuxtApolloConfig<T>
 }
 
-export interface ModulePublicRuntimeConfig {
-  apollo: NuxtApolloConfig<any>
+export interface ModulePublicRuntimeConfig<T = any> {
+  apollo: NuxtApolloConfig<T>
 }
 
 declare module '#app' {
