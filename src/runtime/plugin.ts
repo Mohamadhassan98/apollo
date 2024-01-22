@@ -89,8 +89,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       nuxtApp.callHook('apollo:error', err)
     })
 
-    const link = clientConfig.link || ApolloLink.from([
-      ...(clientConfig.httpLinkMiddlewares || []),
+    let link = clientConfig.link || ApolloLink.from([
       errorLink,
       ...(!wsLink
         ? [httpLink]
@@ -107,6 +106,9 @@ export default defineNuxtPlugin((nuxtApp) => {
                 ])
           ])
     ])
+    if (clientConfig.httpLinkMiddleware) {
+      link = clientConfig.httpLinkMiddleware.concat(link)
+    }
 
     const cache = clientConfig.cache || new InMemoryCache(clientConfig.inMemoryCacheOptions)
 

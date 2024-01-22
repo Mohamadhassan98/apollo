@@ -75,8 +75,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     const errorLink = onError((err) => {
       nuxtApp.callHook("apollo:error", err);
     });
-    const link = clientConfig.link || ApolloLink.from([
-      ...clientConfig.httpLinkMiddlewares || [],
+    let link = clientConfig.link || ApolloLink.from([
       errorLink,
       ...!wsLink ? [httpLink] : [
         ...clientConfig?.websocketsOnly ? [wsLink] : [
@@ -91,6 +90,9 @@ export default defineNuxtPlugin((nuxtApp) => {
         ]
       ]
     ]);
+    if (clientConfig.httpLinkMiddleware) {
+      link = clientConfig.httpLinkMiddleware.concat(link);
+    }
     const cache = clientConfig.cache || new InMemoryCache(clientConfig.inMemoryCacheOptions);
     clients[key] = new ApolloClient({
       ...clientConfig,

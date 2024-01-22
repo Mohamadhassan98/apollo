@@ -29,7 +29,7 @@ type ClientConfig<T = any> = Partial<ApolloClientOptions<T>> & {
    **/
   httpLinkOptions?: Omit<HttpOptions, 'uri'>;
 
-  httpLinkMiddlewares?: ApolloLink[];
+  httpLinkMiddleware?: ApolloLink;
 
   /**
    * Provide additional configuration for the `GraphQLWsLink`.
