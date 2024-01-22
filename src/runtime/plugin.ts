@@ -90,6 +90,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     })
 
     const link = clientConfig.link || ApolloLink.from([
+      ...(clientConfig.httpLinkMiddlewares || []),
       errorLink,
       ...(!wsLink
         ? [httpLink]

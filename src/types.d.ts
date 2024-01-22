@@ -8,6 +8,7 @@ import type {
 } from '@apollo/client'
 import type { CookieOptions } from 'nuxt/dist/app/composables'
 import type { RestartableClient } from './runtime/ws'
+import type { ApolloLink } from '@apollo/client/core'
 export type { ErrorResponse } from '@apollo/client/link/error'
 
 type CookieAttributes = Omit< CookieOptions, 'encode' | 'decode' | 'expires' | 'default'>;
@@ -36,6 +37,8 @@ export type ClientConfig<T = any> = Partial<ApolloClientOptions<T>> & {
    * @type {HttpOptions}
    **/
   httpLinkOptions?: Omit<HttpOptions, 'uri'>;
+
+  httpLinkMiddlewares?: ApolloLink[];
 
   /**
    * Provide additional configuration for the `GraphQLWsLink`.
@@ -125,7 +128,7 @@ export interface NuxtApolloConfig<T = ClientConfig> {
   /**
    * Configuration of the Apollo clients.
    **/
-  clients?: Record< string, T extends boolean ? string | ClientConfig : ClientConfig >;
+  clients?: Record< string, string | ClientConfig >;
 
   /**
    * Default options to be applied to all Apollo clients.

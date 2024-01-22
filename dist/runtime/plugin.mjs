@@ -76,6 +76,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       nuxtApp.callHook("apollo:error", err);
     });
     const link = clientConfig.link || ApolloLink.from([
+      ...clientConfig.httpLinkMiddlewares || [],
       errorLink,
       ...!wsLink ? [httpLink] : [
         ...clientConfig?.websocketsOnly ? [wsLink] : [

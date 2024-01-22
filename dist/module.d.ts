@@ -3,6 +3,7 @@ import { Ref } from 'vue';
 import { ClientOptions } from 'graphql-ws';
 import { ApolloClientOptions, HttpOptions, DefaultOptions, InMemoryCacheConfig } from '@apollo/client';
 import { CookieOptions } from 'nuxt/dist/app/composables';
+import { ApolloLink } from '@apollo/client/core';
 import { ErrorResponse } from '@apollo/client/link/error';
 export { ErrorResponse } from '@apollo/client/link/error';
 
@@ -27,6 +28,8 @@ type ClientConfig<T = any> = Partial<ApolloClientOptions<T>> & {
    * @type {HttpOptions}
    **/
   httpLinkOptions?: Omit<HttpOptions, 'uri'>;
+
+  httpLinkMiddlewares?: ApolloLink[];
 
   /**
    * Provide additional configuration for the `GraphQLWsLink`.
@@ -116,7 +119,7 @@ interface NuxtApolloConfig<T = ClientConfig> {
   /**
    * Configuration of the Apollo clients.
    **/
-  clients?: Record< string, T extends boolean ? string | ClientConfig : ClientConfig >;
+  clients?: Record< string, string | ClientConfig >;
 
   /**
    * Default options to be applied to all Apollo clients.
