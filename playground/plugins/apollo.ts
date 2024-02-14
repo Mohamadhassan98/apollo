@@ -1,4 +1,4 @@
-import type { ErrorResponse } from '@nuxtjs/apollo'
+import type { ErrorResponse } from '@apollo/client/link/error'
 
 export default defineNuxtPlugin((nuxtApp) => {
   // Nuxt Apollo auth hook

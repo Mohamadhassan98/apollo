@@ -1,7 +1,7 @@
 import * as _nuxt_schema from '@nuxt/schema';
 import { Ref } from 'vue';
 import { ClientOptions } from 'graphql-ws';
-import { ApolloClientOptions, HttpOptions, DefaultOptions, InMemoryCacheConfig } from '@apollo/client';
+import { ApolloClientOptions, ApolloClient, HttpOptions, DefaultOptions, InMemoryCacheConfig } from '@apollo/client';
 import { CookieOptions } from 'nuxt/dist/app/composables';
 import { ApolloLink } from '@apollo/client/core';
 import { ErrorResponse } from '@apollo/client/link/error';
@@ -14,7 +14,8 @@ type ClientConfig<T = any> = Partial<ApolloClientOptions<T>> & {
    * The GraphQL endpoint.
    * @type {string}
    */
-  httpEndpoint: string;
+  httpEndpoint?: string;
+  apolloClient?: ApolloClient<T>;
 
   /**
    * Provide a GraphQL endpoint to be used client-side. Overrides `httpEndpoint`.

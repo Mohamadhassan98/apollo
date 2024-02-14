@@ -23,7 +23,8 @@ export type ClientConfig<T = any> = Partial<ApolloClientOptions<T>> & {
    * The GraphQL endpoint.
    * @type {string}
    */
-  httpEndpoint: string;
+  httpEndpoint?: string;
+  apolloClient?: ApolloClient<T>;
 
   /**
    * Provide a GraphQL endpoint to be used client-side. Overrides `httpEndpoint`.

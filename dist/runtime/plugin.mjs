@@ -14,104 +14,111 @@ export default defineNuxtPlugin((nuxtApp) => {
   const requestCookies = process.server && NuxtApollo.proxyCookies && useRequestHeaders(["cookie"]) || void 0;
   const clients = {};
   for (const [key, clientConfig] of Object.entries(NuxtApollo.clients)) {
-    const getAuth = async () => {
-      const token = ref(null);
-      await nuxtApp.callHook("apollo:auth", { token, client: key });
-      if (!token.value) {
-        if (clientConfig.tokenStorage === "cookie") {
-          if (process.client) {
-            token.value = useCookie(clientConfig.tokenName).value ?? null;
-          } else if (requestCookies?.cookie) {
-            token.value = requestCookies.cookie.split(";").find((c) => c.trim().startsWith(`${clientConfig.tokenName}=`))?.split("=")?.[1] ?? null;
-          }
-        } else if (process.client && clientConfig.tokenStorage === "localStorage") {
-          token.value = localStorage.getItem(clientConfig.tokenName);
-        }
+    if (clientConfig.apolloClient) {
+      clients[key] = clientConfig.apolloClient;
+    } else {
+      const getAuth = async () => {
+        const token = ref(null);
+        await nuxtApp.callHook("apollo:auth", {
+          token,
+          client: key
+        });
         if (!token.value) {
-          return;
-        }
-      }
-      const authScheme = !!token.value?.match(/^[a-zA-Z]+\s/)?.[0];
-      if (authScheme || clientConfig?.authType === null) {
-        return token.value;
-      }
-      return `${clientConfig?.authType} ${token.value}`;
-    };
-    const authLink = setContext(async (_, { headers }) => {
-      const auth = await getAuth();
-      if (!auth) {
-        return;
-      }
-      return {
-        headers: {
-          ...headers,
-          ...requestCookies && requestCookies,
-          [clientConfig.authHeader]: auth
-        }
-      };
-    });
-    const httpLink = authLink.concat(createHttpLink({
-      ...clientConfig?.httpLinkOptions && clientConfig.httpLinkOptions,
-      uri: process.client && clientConfig.browserHttpEndpoint || clientConfig.httpEndpoint,
-      headers: { ...clientConfig?.httpLinkOptions?.headers || {} }
-    }));
-    let wsLink = null;
-    if (process.client && clientConfig.wsEndpoint) {
-      const wsClient = createRestartableClient({
-        ...clientConfig.wsLinkOptions,
-        url: clientConfig.wsEndpoint,
-        connectionParams: async () => {
-          const auth = await getAuth();
-          if (!auth) {
+          if (clientConfig.tokenStorage === "cookie") {
+            if (process.client) {
+              token.value = useCookie(clientConfig.tokenName).value ?? null;
+            } else if (requestCookies?.cookie) {
+              token.value = requestCookies.cookie.split(";").find((c) => c.trim().startsWith(`${clientConfig.tokenName}=`))?.split("=")?.[1] ?? null;
+            }
+          } else if (process.client && clientConfig.tokenStorage === "localStorage") {
+            token.value = localStorage.getItem(clientConfig.tokenName);
+          }
+          if (!token.value) {
             return;
           }
-          return { headers: { [clientConfig.authHeader]: auth } };
         }
+        const authScheme = !!token.value?.match(/^[a-zA-Z]+\s/)?.[0];
+        if (authScheme || clientConfig?.authType === null) {
+          return token.value;
+        }
+        return `${clientConfig?.authType} ${token.value}`;
+      };
+      const authLink = setContext(async (_, { headers }) => {
+        const auth = await getAuth();
+        if (!auth) {
+          return;
+        }
+        return {
+          headers: {
+            ...headers,
+            ...requestCookies && requestCookies,
+            [clientConfig.authHeader]: auth
+          }
+        };
       });
-      wsLink = new GraphQLWsLink(wsClient);
-      nuxtApp._apolloWsClients = nuxtApp._apolloWsClients || {};
-      nuxtApp._apolloWsClients[key] = wsClient;
-    }
-    const errorLink = onError((err) => {
-      nuxtApp.callHook("apollo:error", err);
-    });
-    let link = clientConfig.link || ApolloLink.from([
-      errorLink,
-      ...!wsLink ? [httpLink] : [
-        ...clientConfig?.websocketsOnly ? [wsLink] : [
-          split(
-            ({ query }) => {
-              const definition = getMainDefinition(query);
-              return definition.kind === "OperationDefinition" && definition.operation === "subscription";
-            },
-            wsLink,
-            httpLink
-          )
+      const httpLink = authLink.concat(createHttpLink({
+        ...clientConfig?.httpLinkOptions && clientConfig.httpLinkOptions,
+        uri: process.client && clientConfig.browserHttpEndpoint || clientConfig.httpEndpoint,
+        headers: { ...clientConfig?.httpLinkOptions?.headers || {} }
+      }));
+      let wsLink = null;
+      if (process.client && clientConfig.wsEndpoint) {
+        const wsClient = createRestartableClient({
+          ...clientConfig.wsLinkOptions,
+          url: clientConfig.wsEndpoint,
+          connectionParams: async () => {
+            const auth = await getAuth();
+            if (!auth) {
+              return;
+            }
+            return { headers: { [clientConfig.authHeader]: auth } };
+          }
+        });
+        wsLink = new GraphQLWsLink(wsClient);
+        nuxtApp._apolloWsClients = nuxtApp._apolloWsClients || {};
+        nuxtApp._apolloWsClients[key] = wsClient;
+      }
+      const errorLink = onError((err) => {
+        nuxtApp.callHook("apollo:error", err);
+      });
+      let link = clientConfig.link || ApolloLink.from([
+        errorLink,
+        ...!wsLink ? [httpLink] : [
+          ...clientConfig?.websocketsOnly ? [wsLink] : [
+            split(
+              ({ query }) => {
+                const definition = getMainDefinition(query);
+                return definition.kind === "OperationDefinition" && definition.operation === "subscription";
+              },
+              wsLink,
+              httpLink
+            )
+          ]
         ]
-      ]
-    ]);
-    if (clientConfig.httpLinkMiddleware) {
-      link = clientConfig.httpLinkMiddleware.concat(link);
-    }
-    const cache = clientConfig.cache || new InMemoryCache(clientConfig.inMemoryCacheOptions);
-    clients[key] = new ApolloClient({
-      ...clientConfig,
-      link,
-      cache,
-      ...NuxtApollo.clientAwareness && { name: key },
-      ...process.server ? { ssrMode: true } : { ssrForceFetchDelay: 100 },
-      connectToDevTools: clientConfig.connectToDevTools || false,
-      defaultOptions: clientConfig?.defaultOptions
-    });
-    if (!clients?.default && !NuxtApollo?.clients?.default && key === Object.keys(NuxtApollo.clients)[0]) {
-      clients.default = clients[key];
-    }
-    const cacheKey = `_apollo:${key}`;
-    nuxtApp.hook("app:rendered", () => {
-      nuxtApp.payload.data[cacheKey] = cache.extract();
-    });
-    if (process.client && nuxtApp.payload.data[cacheKey]) {
-      cache.restore(destr(JSON.stringify(nuxtApp.payload.data[cacheKey])));
+      ]);
+      if (clientConfig.httpLinkMiddleware) {
+        link = clientConfig.httpLinkMiddleware.concat(link);
+      }
+      const cache = clientConfig.cache || new InMemoryCache(clientConfig.inMemoryCacheOptions);
+      clients[key] = new ApolloClient({
+        ...clientConfig,
+        link,
+        cache,
+        ...NuxtApollo.clientAwareness && { name: key },
+        ...process.server ? { ssrMode: true } : { ssrForceFetchDelay: 100 },
+        connectToDevTools: clientConfig.connectToDevTools || false,
+        defaultOptions: clientConfig?.defaultOptions
+      });
+      if (!clients?.default && !NuxtApollo?.clients?.default && key === Object.keys(NuxtApollo.clients)[0]) {
+        clients.default = clients[key];
+      }
+      const cacheKey = `_apollo:${key}`;
+      nuxtApp.hook("app:rendered", () => {
+        nuxtApp.payload.data[cacheKey] = cache.extract();
+      });
+      if (process.client && nuxtApp.payload.data[cacheKey]) {
+        cache.restore(destr(JSON.stringify(nuxtApp.payload.data[cacheKey])));
+      }
     }
   }
   provideApolloClients(clients);
@@ -122,7 +129,10 @@ export default defineNuxtPlugin((nuxtApp) => {
   return {
     provide: {
       apolloHelpers: useApollo(),
-      apollo: { clients, defaultClient }
+      apollo: {
+        clients,
+        defaultClient
+      }
     }
   };
 });
