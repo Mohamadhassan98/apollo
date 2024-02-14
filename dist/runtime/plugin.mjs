@@ -16,6 +16,17 @@ export default defineNuxtPlugin((nuxtApp) => {
   for (const [key, clientConfig] of Object.entries(NuxtApollo.clients)) {
     if (clientConfig.apolloClient) {
       clients[key] = clientConfig.apolloClient;
+      if (!clients?.default && !NuxtApollo?.clients?.default && key === Object.keys(NuxtApollo.clients)[0]) {
+        clients.default = clients[key];
+      }
+      const client = clients[key];
+      const cacheKey = `_apollo:${key}`;
+      nuxtApp.hook("app:rendered", () => {
+        nuxtApp.payload.data[cacheKey] = client.cache.extract();
+      });
+      if (process.client && nuxtApp.payload.data[cacheKey]) {
+        client.cache.restore(destr(JSON.stringify(nuxtApp.payload.data[cacheKey])));
+      }
     } else {
       const getAuth = async () => {
         const token = ref(null);

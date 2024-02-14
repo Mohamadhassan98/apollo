@@ -1,4 +1,4 @@
-import { defineApolloClient } from '../../src/module'
+import { defineApolloClient } from '@nuxtjs/apollo'
 
 export default defineApolloClient({
   // The GraphQL endpoint.
