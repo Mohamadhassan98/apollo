@@ -110,7 +110,8 @@ export default defineNuxtModule<NuxtApolloConfig<any>>({
         ` proxyCookies: ${options.proxyCookies},`,
         ` clientAwareness: ${options.clientAwareness},`,
         ` cookieAttributes: ${serializeConfig(options.cookieAttributes)},`,
-        ` clients: ${serializeConfig(clients)}`,
+        // ` clients: ${serializeConfig(clients)}`,
+        ` clients: ${clients}`,
         '}'
       ].join('\n')
     })
